@@ -6,10 +6,10 @@
     "scripts": {
         "watch-less": "less-watch-compiler src/client/less build/client/css",
         "watch-ts": "tsc -w",
+        "dev": "nodemon ./build/server/app.js",
         "tsc": "tsc",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "ts-node-dev --respawn --transpileOnly ./app/app.ts",
-        "prod": "tsc && node ./build/app.js"
+        "prod": "tsc && node ./build/server/app.js"
     },
     "keywords": [],
     "author": "",
@@ -20,7 +20,10 @@
         "express-ws": "^4.0.0",
         "less": "^3.9.0",
         "less-watch-compiler": "^1.13.0",
+        "nodemon": "^1.19.0",
         "ts-node-dev": "^1.0.0-pre.39",
-        "typescript": "^3.4.5"
+        "typescript": "^3.4.5",
+        "webpack": "^4.31.0",
+        "webpack-cli": "^3.3.2"
     }
 }

@@ -18,12 +18,14 @@ app.set('view engine', 'jade');
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 // app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// oughta only be used in dev
+app.use(express.static('../../build/client'));
 
 // app.use('/', indexRouter);
 // app.use('/users', usersRouter);
 
-app.get('/', function (req, res) {
+app.get('/hello', function (req, res) {
   res.send('Hello World!');
 });
 
