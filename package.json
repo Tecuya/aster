@@ -4,7 +4,8 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "watch-less": "less-watch-compiler app/public/less app/public/css",
+        "watch-less": "less-watch-compiler src/client/less build/client/css",
+        "watch-ts": "tsc -w",
         "tsc": "tsc",
         "test": "echo \"Error: no test specified\" && exit 1",
         "dev": "ts-node-dev --respawn --transpileOnly ./app/app.ts",
