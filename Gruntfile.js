@@ -15,6 +15,12 @@ module.exports = function(grunt) {
             }
         },
 
+        ts: {
+            default: {
+                tsconfig: 'tsconfig.json'
+            }
+        },
+
         watch: {
             less: {
                 files: ['src/client/less/main.less'],
@@ -24,10 +30,17 @@ module.exports = function(grunt) {
             statics: {
                 files: ['src/client/**'],
                 tasks: ['copy:statics']
+            },
+
+            ts: {
+                files: ['src/**/*.ts'],
+                tasks: ['ts']
             }
+
         }
     });
 
+    grunt.loadNpmTasks('grunt-ts');
     grunt.loadNpmTasks('grunt-contrib-less');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-watch');

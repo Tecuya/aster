@@ -11,19 +11,17 @@ import os = require( 'os' );
 // Create a new express application instance
 const app: express.Application = express();
 
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-
+// app.set('views', path.join(__dirname, 'views'));
+// app.set('view engine', 'jade');
 // app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: false }));
 // app.use(cookieParser());
-
-// oughta only be used in dev
-app.use(express.static('../../build/client'));
-
 // app.use('/', indexRouter);
 // app.use('/users', usersRouter);
+
+// oughta only be used in dev
+app.use(express.static('./build/client'));
 
 app.get('/hello', function (req, res) {
   res.send('Hello World!');
