@@ -2,15 +2,17 @@ module.exports = function(grunt) {
 
     grunt.initConfig({
         less: {
-            files: {
-                'build/client/less/main.css': 'src/client/less/main.less'
+            main: {
+                files: {
+                    'build/client/css/main.css': 'src/client/less/main.less'
+                }
             }
         },
 
         copy: {
             statics: {
                 files: [
-                    {expand: true, src: 'src/client/**', dest: 'build/client'}
+                    {expand: true, cwd: 'src/client', src: ['**'], dest: 'build/client'}
                 ]
             }
         },
@@ -45,5 +47,5 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-watch');
 
-    grunt.registerTask('default', ['watch']);
+    grunt.registerTask('default', ['less','ts','copy:statics','watch']);
 }
