@@ -24,6 +24,10 @@ var rightPressed: boolean;
 var upPressed: boolean;
 
 let currentRotation = 0;
+let velocityX = 0;
+let velocityY = 0;
+let playerX = 40;
+let playerY = 40;
 
 function keyDownHandler(e:KeyboardEvent) {
   if(e.key == "Right" || e.key == "ArrowRight") {
@@ -83,6 +87,17 @@ function draw() {
   if(rightPressed) {
     currentRotation += 0.1;
   }
+  if(upPressed) {
+    let halfPis = currentRotation % Math.PI/2;
+    // rotation 0pi = Y + moment
+    // rotation 0.5pi = X + moment
+    // rotation 1pi = Y - moment
+    // rotation 1.5pi = X - moment
+    velocityX += 0;
+  }
+
+  playerX += velocityX;
+  playerY += velocityY;
   
 //  ctx.globalCompositeOperation = 'destination-over';
   ctx.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
@@ -94,7 +109,7 @@ function draw() {
 
   ctx.strokeStyle = 'green';
   ctx.fillStyle = 'green';;  
-  drawPlayer(ctx, 40, 40, currentRotation);
+  drawPlayer(ctx, playerX, playerY, currentRotation);
   
   // ctx.translate(150, 150);
 
