@@ -19,7 +19,6 @@ function init() {
   document.addEventListener("keyup", keyUpHandler, false);
 
   player = new Player(canvas.width / 2, canvas.height / 2, 0, 0);
-  player.currentRotation = 0;
   
   asteroids.push(
     new Asteroid(200, 200, 10, 10));
@@ -106,7 +105,7 @@ class Asteroid extends Entity {
     ctx.lineTo(5, 0);
     ctx.lineTo(7, -3);
     ctx.lineTo(2, -10);
-    ctx.lineTo(-3. -9);
+    ctx.lineTo(-3, -9);
     ctx.lineTo(-4, -2);
     ctx.lineTo(-7, 2);
     ctx.lineTo(-6, 9);
@@ -141,7 +140,7 @@ class Bullet extends Entity {
 
 class Player extends Entity {
 
-  public currentRotation: number;
+  let currentRotation = 0;
   
   updatePosition(): void {
     super.updatePosition();
