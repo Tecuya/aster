@@ -11,17 +11,18 @@ var spacePressed: boolean;
 var player: Player;
 let bullets: Bullet[] = [];
 let asteroids: Asteroid[] = [];
+let explosions: Explosion[] = [];
 
-let canvasX = 1920;
-let canvasY = 1080;
-
-let bulletSize = 6;
+let bulletSize = 4;
+let explosionRays = 11;
+let deathFrameCount = 120;
 
 function init() {
   canvas = <HTMLCanvasElement>document.getElementById('main');
-  canvas.width = canvasX;
-  canvas.height = canvasY;
 
+  canvas.width = 1024;
+  canvas.height = 576;
+  
   document.addEventListener("keydown", keyDownHandler, false);
   document.addEventListener("keyup", keyUpHandler, false);
 
@@ -71,6 +72,7 @@ function keyUpHandler(e:KeyboardEvent) {
 }
 
 
+
 class Entity {
   
   protected distanceTraveled: number;
@@ -103,10 +105,39 @@ class Entity {
       this.positionY = canvas.height;
     }
   }
-  
+
+  drawRelativeCoordinates(coords: number[][], ctx:CanvasRenderingContext2D): void {
+    coords.forEach((coord, idx) => {
+      if(idx == 0) {
+        ctx.moveTo(coord[0], coord[1]);
+      } else {
+        ctx.lineTo(coord[0], coord[1]);
+      }      
+    });
+  }
 }
 
-abstract class Asteroid extends Entity {
+
+abstract class Collideable extends Entity {
+  getAbsoluteCoordinates(): number[][] {
+    
+    var absoluteCoords: number[][];
+    absoluteCoords = [];
+    
+    for(let coord of this.getRelativeCoordinates()) {
+      absoluteCoords.push(
+        [this.positionX + coord[0],
+         this.positionY + coord[1]]);
+    }
+
+    return absoluteCoords;
+  }
+
+  abstract getRelativeCoordinates(): number[][];  
+}
+
+
+abstract class Asteroid extends Collideable {
 
   updatePosition(): void {
     super.updatePosition();
@@ -121,13 +152,7 @@ abstract class Asteroid extends Entity {
     ctx.beginPath();
     ctx.translate(this.positionX, this.positionY);
 
-    this.getCoordinates().forEach((coord, idx) => {
-      if(idx == 0) {
-        ctx.moveTo(coord[0], coord[1]);
-      } else {
-        ctx.lineTo(coord[0], coord[1]);
-      }      
-    });
+    this.drawRelativeCoordinates(this.getRelativeCoordinates(), ctx);
     
     ctx.closePath();
     ctx.stroke();
@@ -135,26 +160,11 @@ abstract class Asteroid extends Entity {
     ctx.restore();
   }
 
-  abstract getCoordinates(): number[][];
   abstract getSize(): string;
-
-  getAbsoluteCoordinates(): number[][] {
-    
-    var absoluteCoords: number[][];
-    absoluteCoords = [];
-    
-    for(let coord of this.getCoordinates()) {
-      absoluteCoords.push(
-        [this.positionX + coord[0],
-         this.positionY + coord[1]]);
-    }
-
-    return absoluteCoords;
-  }
 }
 
 class AsteroidLarge extends Asteroid {
-  getCoordinates(): number[][] {
+  getRelativeCoordinates(): number[][] {
     return [
       [0, 80],
       [56, 40],
@@ -177,7 +187,7 @@ class AsteroidLarge extends Asteroid {
 }
 
 class AsteroidMedium extends Asteroid {
-  getCoordinates(): number[][] {
+  getRelativeCoordinates(): number[][] {
     return [
       [0, 40],
       [28, 20],
@@ -199,7 +209,7 @@ class AsteroidMedium extends Asteroid {
 }
 
 class AsteroidSmall extends Asteroid {
-  getCoordinates(): number[][] {
+  getRelativeCoordinates(): number[][] {
     return [
       [0, 20],
       [14, 10],
@@ -221,7 +231,43 @@ class AsteroidSmall extends Asteroid {
   
 }
 
-class Bullet extends Entity {
+
+class Explosion extends Entity {
+
+  private frameNumber: number = 0;
+
+  draw(ctx:CanvasRenderingContext2D): void {
+    ctx.save();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+
+    ctx.translate(this.positionX, this.positionY);
+    
+    let xrads = Math.PI*2 / explosionRays;
+
+    for(var i=0; i<explosionRays; i++) {
+      ctx.beginPath();
+      ctx.moveTo(
+        this.frameNumber * Math.sin(xrads * i),
+        this.frameNumber * Math.cos(xrads * i));
+      ctx.lineTo(
+        (this.frameNumber+3) * Math.sin(xrads * i),
+        (this.frameNumber+3) * Math.cos(xrads * i));
+      ctx.closePath();
+      ctx.stroke();
+    }
+    
+    this.frameNumber++;
+    ctx.restore();
+  }
+
+  shouldContinue(): boolean {
+    return this.frameNumber < 60;
+  }  
+}
+
+
+class Bullet extends Collideable {
 
   updatePosition(): void {
     super.updatePosition();
@@ -231,11 +277,16 @@ class Bullet extends Entity {
   draw(ctx:CanvasRenderingContext2D): void {
     ctx.save();
     ctx.strokeStyle = 'white';
-    ctx.lineWidth = bulletSize;
-    
+    ctx.lineWidth = 2;
+
+    ctx.translate(this.positionX, this.positionY);    
     ctx.beginPath();
-    ctx.moveTo(this.positionX, this.positionY);
-    ctx.lineTo(this.positionX + this.velocityX, this.positionY + this.velocityY);
+
+    this.drawRelativeCoordinates(this.getRelativeCoordinates(), ctx);
+    
+    // ctx.moveTo(this.positionX, this.positionY);
+    // ctx.lineTo(this.positionX + this.velocityX, this.positionY + this.velocityY);
+    
     ctx.closePath();
     ctx.stroke();
     
@@ -246,18 +297,19 @@ class Bullet extends Entity {
     return (this.distanceTraveled < canvas.width);
   }
 
-  getAbsoluteCoordinates(): number[][] {
-    return [
-      [this.positionX - bulletSize / 2, this.positionY - bulletSize / 2],
-      [this.positionX + bulletSize / 2, this.positionY - bulletSize / 2],
-      [this.positionX + bulletSize / 2, this.positionY + bulletSize / 2],
-      [this.positionX - bulletSize / 2, this.positionY + bulletSize / 2],
-      [this.positionX - bulletSize / 2, this.positionY - bulletSize / 2]
-    ];
-  }
+  getRelativeCoordinates(): number[][] {
+    // a square of bulletsize pixels
+    return [[-1 * bulletSize / 2, -1 * bulletSize / 2],
+            [bulletSize / 2,      -1 * bulletSize / 2],
+            [bulletSize / 2,      bulletSize / 2],
+            [-1 * bulletSize / 2, bulletSize / 2],
+            [-1 * bulletSize / 2, -1 * bulletSize / 2]]
+  }  
 }
 
-class Player extends Entity {
+class Player extends Collideable {
+
+  public deathFrame: number = -1;
   
   constructor(
     public positionX:number,
@@ -265,16 +317,43 @@ class Player extends Entity {
     public velocityX:number,
     public velocityY:number,
     public currentRotation:number) {
-    
-    super(positionX, positionY, velocityX, velocityY);
+
+    super(positionX, positionY, velocityX, velocityY);    
   }
-    
+
+  getRelativeCoordinates(): number[][] {
+    return [[0, -10],
+            [-10, 10],
+            [0, 7],
+            [10, 10],
+            [0, -10]];
+  }
+  
   updatePosition(): void {
     super.updatePosition();
     this.wrapPosition();
   }    
 
+  die(): void {
+    this.deathFrame = 0;
+  }
+  
   draw(ctx:CanvasRenderingContext2D, thrust:boolean): void {
+
+    if(this.deathFrame > -1) {
+      this.deathFrame++;
+
+      if(this.deathFrame < deathFrameCount) {
+        return;
+      }
+     
+      this.deathFrame = -1;
+      this.positionX = canvas.width / 2;
+      this.positionY = canvas.height / 2;
+      this.velocityX = 0;
+      this.velocityY = 0;
+    }
+    
     ctx.save();
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 3;
@@ -283,18 +362,19 @@ class Player extends Entity {
     ctx.rotate(this.currentRotation);
     
     ctx.beginPath();
-    ctx.moveTo(0, -10);
-    ctx.lineTo(-10, 10);
-    ctx.lineTo(0, 7);
+
+    this.drawRelativeCoordinates(this.getRelativeCoordinates(), ctx);
 
     if(thrust) {
-      ctx.lineTo(-4, 14);
-      ctx.lineTo(0, 18);
-      ctx.lineTo(4, 14);
-      ctx.lineTo(0, 7);
+      this.drawRelativeCoordinates(
+        [[-4, 14],
+         [0, 18],
+         [4, 14],
+         [0, 7],
+         [-4, 14]],
+      ctx);
     }
     
-    ctx.lineTo(10, 10);
     ctx.closePath();
     ctx.stroke();
 
@@ -331,10 +411,8 @@ function frame() {
   for(let bullet of bullets) bullet.updatePosition();
   for(let asteroid of asteroids) asteroid.updatePosition();
 
-  bullets = bullets.filter(bullet => bullet.shouldContinue());
-
-  bullets.forEach((bullet, bidx) => {
-    asteroids.forEach((asteroid, aidx) => {
+  asteroids.forEach((asteroid, aidx) => {
+    bullets.forEach((bullet, bidx) => {
       
       if(greinerHormann.intersection(asteroid.getAbsoluteCoordinates(), bullet.getAbsoluteCoordinates())) { 
 
@@ -343,45 +421,68 @@ function frame() {
 
         let size = asteroid.getSize();
         if(size == 'large') {
+          
           asteroids.push(
             new AsteroidMedium(
               asteroid.positionX,
               asteroid.positionY,
-              asteroid.velocityX + Math.random() * 2,
-              asteroid.velocityY + Math.random() * 2));
+              asteroid.velocityX + Math.random(),
+              asteroid.velocityY + Math.random()));
           asteroids.push(
             new AsteroidMedium(
               asteroid.positionX,
               asteroid.positionY,
-              asteroid.velocityX + Math.random() * 2,
-              asteroid.velocityY + Math.random() * 2));
+              asteroid.velocityX + Math.random() ,
+              asteroid.velocityY + Math.random() ));
           
         } else if(size == 'medium') {
+          
           asteroids.push(
             new AsteroidSmall(
               asteroid.positionX,
               asteroid.positionY,
-              asteroid.velocityX + Math.random() * 2,
-              asteroid.velocityY + Math.random() * 2));
+              asteroid.velocityX + Math.random() ,
+              asteroid.velocityY + Math.random() ));
           asteroids.push(
             new AsteroidSmall(
               asteroid.positionX,
               asteroid.positionY,
-              asteroid.velocityX + Math.random() * 2,
-              asteroid.velocityY + Math.random() * 2));
+              asteroid.velocityX + Math.random() ,
+              asteroid.velocityY + Math.random() ));
+          
+        } else if(size == 'small') {
+
+          explosions.push(
+            new Explosion(
+              asteroid.positionX,
+              asteroid.positionY,
+              0, 0));
         }
       } 
     });
+
+    if(greinerHormann.intersection(asteroid.getAbsoluteCoordinates(), player.getAbsoluteCoordinates())) {      
+      if(player.deathFrame == -1) { 
+        player.die();
+        explosions.push(
+          new Explosion(
+            player.positionX,
+            player.positionY,
+            player.velocityX,
+            player.velocityY));
+      }
+    }
+    
   });
 
-  bullets = bullets.filter(bullet => bullet !== undefined);
-  asteroids = asteroids.filter(bullet => bullet !== undefined);
+  bullets = bullets.filter(bullet => bullet !== undefined && bullet.shouldContinue());
+  asteroids = asteroids.filter(asteroid => asteroid !== undefined);
+  explosions = explosions.filter(explosion => explosion.shouldContinue());
   
-
   ///////////
   // draw
   
-  ctx.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = 'black';  
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.save();
@@ -389,6 +490,7 @@ function frame() {
   player.draw(ctx, upPressed);
   for(let bullet of bullets) bullet.draw(ctx);
   for(let asteroid of asteroids) asteroid.draw(ctx);
+  for(let explosion of explosions) explosion.draw(ctx);
   
   window.requestAnimationFrame(frame); 
 }
