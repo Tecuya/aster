@@ -1,29 +1,31 @@
 
-
-function init() {
-  let canvasEl = <HTMLCanvasElement>document.getElementById('main');
-  canvasEl.width = window.innerWidth - 20;
-  canvasEl.height = window.innerHeight - 20;
-
-  document.addEventListener("keydown", keyDownHandler, false);
-  document.addEventListener("keyup", keyUpHandler, false);
-
-  draw();
-
-}
+var canvas: HTMLCanvasElement;
 
 var leftPressed: boolean;
 var rightPressed: boolean;
 var upPressed: boolean;
 var spacePressed: boolean;
 
+var player: Player;
 let bullets: Bullet[] = [];
-let currentRotation = 0;
-let velocityX = 0;
-let velocityY = 0;
-let playerX = 40;
-let playerY = 40;
-let radian = 57.2958;
+let asteroids: Asteroid[] = [];
+
+function init() {
+  canvas = <HTMLCanvasElement>document.getElementById('main');
+  canvas.width = window.innerWidth - 20;
+  canvas.height = window.innerHeight - 20;
+
+  document.addEventListener("keydown", keyDownHandler, false);
+  document.addEventListener("keyup", keyUpHandler, false);
+
+  player = new Player(canvas.width / 2, canvas.height / 2, 0, 0);
+  player.currentRotation = 0;
+  
+  asteroids.push(
+    new Asteroid(200, 200, 10, 10));
+  
+  frame();
+}
 
 function keyDownHandler(e:KeyboardEvent) {
   if(e.key == "Right" || e.key == "ArrowRight") {
@@ -34,7 +36,12 @@ function keyDownHandler(e:KeyboardEvent) {
   } else if(e.key == "Up" || e.key == "ArrowUp") {
     upPressed = true;
   } else if(e.key == " ") {
-    spacePressed = true;
+      bullets.push(
+        new Bullet(
+          player.positionX,
+          player.positionY,
+          player.velocityX + (Math.sin(player.currentRotation) * 10),
+          player.velocityY + (-1 * Math.cos(player.currentRotation) * 10)));    
   }
 }
 
@@ -51,46 +58,72 @@ function keyUpHandler(e:KeyboardEvent) {
   }
 }
 
-
-function drawPlayer(ctx:CanvasRenderingContext2D, x:number, y:number, rotation:number) {
-  
-  // ctx.font = '30px Arial';
-  // ctx.fillText(`x: ${x} y:${y} r:${rotation}`, 200, 200);
-
-  ctx.save();
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 3;
-
-  ctx.translate(x, y);
-  ctx.rotate(rotation);
-  
-  ctx.beginPath();
-  ctx.moveTo(0, -10);
-  ctx.lineTo(-10, 10);
-  ctx.lineTo(0, 7);
-  ctx.lineTo(10, 10);
-  ctx.closePath();
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-class Bullet {
+abstract class Entity {
   constructor(
-    private positionX:number,
-    private positionY:number,
-    private velocityX:number,
-    private velocityY:number) {}
+    public positionX:number,
+    public positionY:number,
+    public velocityX:number,
+    public velocityY:number) {}
 
-  updatePosition(): boolean {
+  updatePosition(): void {
     this.positionX += this.velocityX;
     this.positionY += this.velocityY;
+  }
+
+  wrapPosition(): void { 
+    if(this.positionX > canvas.width) {
+      this.positionX = 0;
+    } else if(this.positionX < 0) {
+      this.positionX = canvas.width;
+    }
+    
+    if(this.positionY > canvas.height) {
+      this.positionY = 0;
+    } else if(this.positionY < 0) {
+      this.positionY = canvas.height;
+    }
+  }
+  
+  abstract draw(ctx:CanvasRenderingContext2D): void;
+}
+
+class Asteroid extends Entity {
+
+  updatePosition(): void {
+    super.updatePosition();
+    this.wrapPosition();
   }
   
   draw(ctx:CanvasRenderingContext2D): void {
     ctx.save();
     ctx.strokeStyle = 'white';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 5;
+    
+    ctx.beginPath();
+    ctx.translate(this.positionX, this.positionY);
+    ctx.moveTo(0, 10);
+    ctx.lineTo(7, 5);
+    ctx.lineTo(5, 0);
+    ctx.lineTo(7, -3);
+    ctx.lineTo(2, -10);
+    ctx.lineTo(-3. -9);
+    ctx.lineTo(-4, -2);
+    ctx.lineTo(-7, 2);
+    ctx.lineTo(-6, 9);
+    ctx.closePath();
+    ctx.stroke();
+    
+    ctx.restore();
+  }
+
+}
+
+class Bullet extends Entity {
+  
+  draw(ctx:CanvasRenderingContext2D): void {
+    ctx.save();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 5;
     
     ctx.beginPath();
     ctx.moveTo(this.positionX, this.positionY);
@@ -100,59 +133,82 @@ class Bullet {
     
     ctx.restore();
   }
+
+  // findCollisions(Asteroid[]:asteroids): Asteroid[] {
+    
+  // }
 }
 
-function draw() {
-  let canvas = <HTMLCanvasElement>document.getElementById('main');
+class Player extends Entity {
+
+  public currentRotation: number;
+  
+  updatePosition(): void {
+    super.updatePosition();
+    this.wrapPosition();
+  }
+    
+  draw(ctx:CanvasRenderingContext2D): void {
+    this.draw(ctx, false);
+  }
+
+  draw(ctx:CanvasRenderingContext2D, thrust:boolean): void {
+    ctx.save();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 3;
+
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.lineTo(-10, 10);
+    ctx.lineTo(0, 7);
+
+    if(thrust) {
+      ctx.lineTo(-4, 14);
+      ctx.lineTo(0, 18);
+      ctx.lineTo(4, 14);
+      ctx.lineTo(0, 7);
+    }
+    
+    ctx.lineTo(10, 10);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+function frame() {
   let ctx = canvas.getContext('2d');
 
   if(ctx == null) {
     return;
   }
 
-
   /////////
   // update state
   
   if(leftPressed) {
-    currentRotation -= 0.09;
+    player.currentRotation -= 0.09;
   }
   if(rightPressed) {
-    currentRotation += 0.09;
+    player.currentRotation += 0.09;
   }
   if(upPressed) {
-    velocityX += (Math.sin(currentRotation) / 5);
-    velocityY -= (Math.cos(currentRotation) / 5);
-  }
-  
-  playerX += velocityX;
-  playerY += velocityY;
-
-  if(playerX > canvas.width) {
-    playerX = 0;
-  } else if(playerX < 0) {
-    playerX = canvas.width;
+    player.velocityX += (Math.sin(player.currentRotation) / 5);
+    player.velocityY -= (Math.cos(player.currentRotation) / 5);
   }
 
-  if(playerY > canvas.height) {
-    playerY = 0;
-  } else if(playerY < 0) {
-    playerY = canvas.height;
-  }
-
-  if(spacePressed) {
-    if(bullets.length == 0) {
-      bullets.push(
-        new Bullet(
-          playerX,
-          playerY,
-          velocityX + (Math.sin(currentRotation) * 5),
-          velocityY + (-1 * Math.cos(currentRotation) * 5)));
-    }
-  }
+  player.updatePosition();
 
   for(let bullet of bullets) {
     bullet.updatePosition();
+  }
+
+  for(let asteroid of asteroids) {
+    asteroid.updatePosition();
   }
   
   // remove bullets that hit the edge
@@ -172,11 +228,15 @@ function draw() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.save();
 
-  drawPlayer(ctx, playerX, playerY, currentRotation);
+  player.draw(ctx, upPressed);
 
   for(let bullet of bullets) {
     bullet.draw(ctx);
   }
-    
-  window.requestAnimationFrame(draw); 
+
+  for(let asteroid of asteroids) {
+    ateroid.draw(ctx);
+  }
+  
+  window.requestAnimationFrame(frame); 
 }
