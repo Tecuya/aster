@@ -1,6 +1,3 @@
-let sun = new Image();
-let moon = new Image();
-let earth = new Image();
 
 
 function init() {
@@ -13,21 +10,20 @@ function init() {
 
   draw();
 
-  // sun.src = 'https://mdn.mozillademos.org/files/1456/Canvas_sun.png';
-  // moon.src = 'https://mdn.mozillademos.org/files/1443/Canvas_moon.png';
-  // earth.src = 'https://mdn.mozillademos.org/files/1429/Canvas_earth.png';
-
 }
 
 var leftPressed: boolean;
 var rightPressed: boolean;
 var upPressed: boolean;
+var spacePressed: boolean;
 
+let bullets: Bullet[] = [];
 let currentRotation = 0;
 let velocityX = 0;
 let velocityY = 0;
 let playerX = 40;
 let playerY = 40;
+let radian = 57.2958;
 
 function keyDownHandler(e:KeyboardEvent) {
   if(e.key == "Right" || e.key == "ArrowRight") {
@@ -37,6 +33,8 @@ function keyDownHandler(e:KeyboardEvent) {
     leftPressed = true;
   } else if(e.key == "Up" || e.key == "ArrowUp") {
     upPressed = true;
+  } else if(e.key == " ") {
+    spacePressed = true;
   }
 }
 
@@ -48,15 +46,19 @@ function keyUpHandler(e:KeyboardEvent) {
     leftPressed = false;
   } else if(e.key == "Up" || e.key == "ArrowUp") {
     upPressed = false;
+  } else if(e.key == " ") {
+    spacePressed = false;
   }
 }
 
 
 function drawPlayer(ctx:CanvasRenderingContext2D, x:number, y:number, rotation:number) {
-
-  ctx.font = '30px Arial';
-  ctx.fillText(`x: ${x} y:${y} r:${rotation}`, 1000, 1000);
   
+  // ctx.font = '30px Arial';
+  // ctx.fillText(`x: ${x} y:${y} r:${rotation}`, 200, 200);
+
+  ctx.save();
+  ctx.strokeStyle = 'white';
   ctx.lineWidth = 3;
 
   ctx.translate(x, y);
@@ -65,12 +67,39 @@ function drawPlayer(ctx:CanvasRenderingContext2D, x:number, y:number, rotation:n
   ctx.beginPath();
   ctx.moveTo(0, -10);
   ctx.lineTo(-10, 10);
+  ctx.lineTo(0, 7);
   ctx.lineTo(10, 10);
   ctx.closePath();
   ctx.stroke();
-  ctx.closePath();
 
   ctx.restore();
+}
+
+class Bullet {
+  constructor(
+    private positionX:number,
+    private positionY:number,
+    private velocityX:number,
+    private velocityY:number) {}
+
+  updatePosition(): boolean {
+    this.positionX += this.velocityX;
+    this.positionY += this.velocityY;
+  }
+  
+  draw(ctx:CanvasRenderingContext2D): void {
+    ctx.save();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 3;
+    
+    ctx.beginPath();
+    ctx.moveTo(this.positionX, this.positionY);
+    ctx.lineTo(this.positionX + this.velocityX, this.positionY + this.velocityY);
+    ctx.closePath();
+    ctx.stroke();
+    
+    ctx.restore();
+  }
 }
 
 function draw() {
@@ -81,62 +110,73 @@ function draw() {
     return;
   }
 
+
+  /////////
+  // update state
+  
   if(leftPressed) {
-    currentRotation -= 0.1;
+    currentRotation -= 0.09;
   }
   if(rightPressed) {
-    currentRotation += 0.1;
+    currentRotation += 0.09;
   }
   if(upPressed) {
-    let halfPis = currentRotation % Math.PI/2;
-    // rotation 0pi = Y + moment
-    // rotation 0.5pi = X + moment
-    // rotation 1pi = Y - moment
-    // rotation 1.5pi = X - moment
-    velocityX += 0;
+    velocityX += (Math.sin(currentRotation) / 5);
+    velocityY -= (Math.cos(currentRotation) / 5);
   }
-
+  
   playerX += velocityX;
   playerY += velocityY;
+
+  if(playerX > canvas.width) {
+    playerX = 0;
+  } else if(playerX < 0) {
+    playerX = canvas.width;
+  }
+
+  if(playerY > canvas.height) {
+    playerY = 0;
+  } else if(playerY < 0) {
+    playerY = canvas.height;
+  }
+
+  if(spacePressed) {
+    if(bullets.length == 0) {
+      bullets.push(
+        new Bullet(
+          playerX,
+          playerY,
+          velocityX + (Math.sin(currentRotation) * 5),
+          velocityY + (-1 * Math.cos(currentRotation) * 5)));
+    }
+  }
+
+  for(let bullet of bullets) {
+    bullet.updatePosition();
+  }
   
-//  ctx.globalCompositeOperation = 'destination-over';
+  // remove bullets that hit the edge
+  bullets = bullets.filter(
+    bullet =>
+      bullet.positionX < canvas.width &&
+      bullet.positionX > 0 &&
+      bullet.positionY < canvas.height &&
+      bullet.positionY > 0
+  );
+  
+  ///////////
+  // draw
+  
   ctx.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
-
-  ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-  ctx.save();
-  
+  ctx.fillStyle = 'black';  
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
 
-  ctx.strokeStyle = 'green';
-  ctx.fillStyle = 'green';;  
   drawPlayer(ctx, playerX, playerY, currentRotation);
-  
-  // ctx.translate(150, 150);
 
-  // // Earth
-  // var time = new Date();
-  // ctx.rotate(((2 * Math.PI) / 60) * time.getSeconds() + ((2 * Math.PI) / 60000) * time.getMilliseconds());
-  // ctx.translate(105, 0);
-  // ctx.fillRect(0, -12, 40, 24); // Shadow
-  // ctx.drawImage(earth, -12, -12);
-
-  // // Moon
-  // ctx.save();
-  // ctx.rotate(((2 * Math.PI) / 6) * time.getSeconds() + ((2 * Math.PI) / 6000) * time.getMilliseconds());
-  // ctx.translate(0, 28.5);
-  // ctx.drawImage(moon, -3.5, -3.5);
-
-  ctx.restore();
-  window.requestAnimationFrame(draw);
- 
-  // ctx.beginPath();
-  // ctx.arc(150, 150, 105, 0, Math.PI * 2, false); // Earth orbit
-  // ctx.stroke();
-
-  // ctx.drawImage(sun, 0, 0, 300, 300);
-
- // if(ctx != null) {
-  //   ctx.fillStyle = 'rgb(200, 0, 0)';
-  //   ctx.fillRect(10, 10, 50, 50);
-  // }
+  for(let bullet of bullets) {
+    bullet.draw(ctx);
+  }
+    
+  window.requestAnimationFrame(draw); 
 }
