@@ -654,13 +654,15 @@ function frame() {
           player.positionY,
           player.velocityX,
           player.velocityY));
-    }
 
-    lives--;
-    if(lives < 0) {
-      round = 0;
-      lastScore = score;
-      initializeRound();
+      lives--;
+      if(lives < 0) {
+        player.playing = false;
+        round = 0;
+        lastScore = score;
+        initializeRound();
+      }
+      
     }
     
   });
