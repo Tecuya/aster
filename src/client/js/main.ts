@@ -1,4 +1,11 @@
 
+/// TOOD
+// make S & B only last 200 bullets or so
+// big / small ship powerup powerdown
+// hyperspace
+// random asteroid shapes
+// ctrl = shoot?
+
 declare var greinerHormann: any;
 
 var canvas: HTMLCanvasElement;
