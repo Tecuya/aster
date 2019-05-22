@@ -13,13 +13,16 @@ var player: Player;
 let bullets: Bullet[] = [];
 let asteroids: Asteroid[] = [];
 let explosions: Explosion[] = [];
+let powerups: PowerUp[] = [];
 
 // constants
 let bulletSize = 4;
+let bigBulletSize = 20;
 let explosionRays = 11;
 let deathFrameCount = 120;
-let spawnGraceSize = 80;
-let rounds = [1, 2, 3, 4, 5, 6, 7, 9, 12, 15, 20, 30, 50];
+let spawnGraceSize = 50;
+let roundAsteroids = [1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 8, 9, 9, 9,  9,  9];
+let roundSpeeds =    [1, 1, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 30];
 let rotationSpeed = 0.07;
 let canvasX = 1024;
 let canvasY = 576;
@@ -36,6 +39,9 @@ let spawnGraceBox = [
 
 // initial state
 let round = 0;
+let score = 0;
+let lives = 0;
+let lastScore = -1;
 
 function init() {
   canvas = <HTMLCanvasElement>document.getElementById('main');
@@ -53,6 +59,36 @@ function init() {
   frame();
 }
 
+function initializeRound(): void {
+  powerups = [];
+  explosions = [];
+  bullets = [];
+  asteroids = [];
+  for(let i=0; i<roundAsteroids[round]; i++) {
+    asteroids.push(
+      new AsteroidLarge(
+        Math.random() * canvas.width,
+        Math.random() * canvas.height,
+        (Math.random() - 0.5) * 2,
+        (Math.random() - 0.5) * 2));   
+  }
+  
+  if(round > 0) {
+    player.preRound();
+
+    player.playing = true;
+
+    player.clearPowerUps();
+    player.setDefaultPosition();
+    
+  }
+
+  if(round == 1) {
+    lives = 5;
+  }
+
+}
+
 function keyDownHandler(e:KeyboardEvent) {
   if(e.key == "Right" || e.key == "ArrowRight") {
     rightPressed = true;
@@ -62,6 +98,7 @@ function keyDownHandler(e:KeyboardEvent) {
   } else if(e.key == "Up" || e.key == "ArrowUp") {
     upPressed = true;
   } else if(e.key == " ") {
+    spacePressed = true;
     if(!player.isDead()) { 
       bullets.push(
         new Bullet(
@@ -70,25 +107,6 @@ function keyDownHandler(e:KeyboardEvent) {
           player.velocityX + (Math.sin(player.currentRotation) * 10),
           player.velocityY + (-1 * Math.cos(player.currentRotation) * 10)));
     }
-  }
-}
-
-function initializeRound(): void {
-  bullets = [];
-  asteroids = [];
-  for(let i=0; i<rounds[round]; i++) {
-    asteroids.push(
-      new AsteroidLarge(
-        Math.random() * canvas.width,
-        Math.random() * canvas.height,
-        (Math.random() - 0.5) * 2,
-        (Math.random() - 0.5) * 2));   
-  }
-  if(round > 0) {
-    player.preRound();
-
-    player.playing = true;    
-    player.setDefaultPosition();
   }
 }
 
@@ -302,6 +320,57 @@ class Explosion extends Entity {
 }
 
 
+abstract class PowerUp extends Collideable {
+
+  updatePosition(): void {
+    super.updatePosition();
+    this.wrapPosition();
+  }
+
+  draw(ctx:CanvasRenderingContext2D): void {
+    ctx.save();
+    ctx.strokeStyle = 'green';
+    ctx.fillStyle = 'green';
+    ctx.lineWidth = 2;
+
+    ctx.translate(this.positionX, this.positionY);    
+    ctx.beginPath();
+
+    this.drawRelativeCoordinates(this.getRelativeCoordinates(), ctx);
+
+    ctx.fillText(this.getPowerUpCode(), -6, 6);
+    
+    ctx.closePath();
+    ctx.stroke();
+    
+    ctx.restore();
+  }
+
+  getRelativeCoordinates(): number[][] {
+    return [
+      [0, -13],
+      [13, 0],
+      [0, 13],
+      [-13, 0],
+      [0, -13]];
+  }
+  
+  abstract getPowerUpCode(): string;
+}
+
+
+class StreamPowerUp extends PowerUp {
+  getPowerUpCode(): string {
+    return 'S';
+  }
+}
+
+class BigBulletPowerUp extends PowerUp {
+  getPowerUpCode(): string {
+    return 'B';
+  }
+}
+
 class Bullet extends Collideable {
 
   updatePosition(): void {
@@ -330,16 +399,18 @@ class Bullet extends Collideable {
   }
 
   getRelativeCoordinates(): number[][] {
-    return [[-1 * bulletSize / 2, -1 * bulletSize / 2],
-            [bulletSize / 2,      -1 * bulletSize / 2],
-            [bulletSize / 2,      bulletSize / 2],
-            [-1 * bulletSize / 2, bulletSize / 2],
-            [-1 * bulletSize / 2, -1 * bulletSize / 2]]
+    let useBs = player.hasPowerUp('B') ? bigBulletSize : bulletSize;
+    return [[-1 * useBs / 2, -1 * useBs / 2],
+            [useBs / 2,      -1 * useBs / 2],
+            [useBs / 2,      useBs / 2],
+            [-1 * useBs / 2, useBs / 2],
+            [-1 * useBs / 2, -1 * useBs / 2]]
   }  
 }
 
 class Player extends Collideable {
 
+  private powerUps: string[] = [];
   public playing: boolean = false;
   private deathFrame: number = -1;
   
@@ -353,6 +424,18 @@ class Player extends Collideable {
     super(positionX, positionY, velocityX, velocityY);    
   }
 
+  addPowerUp(powerUpCode: string): void {
+    this.powerUps.push(powerUpCode);
+  }
+
+  hasPowerUp(powerUpCode: string): boolean {
+    return this.powerUps.indexOf(powerUpCode) > -1;
+  }
+
+  clearPowerUps(): void {
+    this.powerUps = [];
+  }
+  
   getRelativeCoordinates(): number[][] {
     return [[0, -10],
             [-10, 10],
@@ -472,10 +555,22 @@ function frame() {
       player.updatePosition();
     }
   }
+
+  if(!player.isDead() && player.hasPowerUp('S') && spacePressed) { 
+    bullets.push(
+      new Bullet(
+        player.positionX,
+        player.positionY,
+        player.velocityX + (Math.sin(player.currentRotation) * 10),
+        player.velocityY + (-1 * Math.cos(player.currentRotation) * 10)));
+  }
   
   for(let bullet of bullets) bullet.updatePosition();
   for(let asteroid of asteroids) asteroid.updatePosition();
+  for(let powerup of powerups) powerup.updatePosition();
 
+  let asteroidSpeedMult = roundSpeeds[round];
+  
   // collisions
   asteroids.forEach((asteroid, aidx) => {
     bullets.forEach((bullet, bidx) => {
@@ -487,47 +582,77 @@ function frame() {
 
         let size = asteroid.getSize();
         if(size == 'large') {
+
+          score += 20;
           
           asteroids.push(
             new AsteroidMedium(
               asteroid.positionX,
               asteroid.positionY,
-              asteroid.velocityX + (Math.random() - 0.5),
-              asteroid.velocityY + (Math.random() - 0.5)));
+              asteroidSpeedMult * (asteroid.velocityX + (Math.random() - 0.5)),
+              asteroidSpeedMult * (asteroid.velocityY + (Math.random() - 0.5))));
           asteroids.push(
             new AsteroidMedium(
               asteroid.positionX,
               asteroid.positionY,
-              asteroid.velocityX + (Math.random() - 0.5) ,
-              asteroid.velocityY + (Math.random() - 0.5) ));
+              asteroidSpeedMult * (asteroid.velocityX + (Math.random() - 0.5)),
+              asteroidSpeedMult * (asteroid.velocityY + (Math.random() - 0.5))));
           
         } else if(size == 'medium') {
+
+          score += 50;
           
           asteroids.push(
             new AsteroidSmall(
               asteroid.positionX,
               asteroid.positionY,
-              asteroid.velocityX + (Math.random() - 0.5) ,
-              asteroid.velocityY + (Math.random() - 0.5) ));
+              asteroidSpeedMult * (asteroid.velocityX + (Math.random() - 0.5)),
+              asteroidSpeedMult * (asteroid.velocityY + (Math.random() - 0.5))));
           asteroids.push(
             new AsteroidSmall(
               asteroid.positionX,
               asteroid.positionY,
-              asteroid.velocityX + (Math.random() - 0.5) ,
-              asteroid.velocityY + (Math.random() - 0.5) ));
+              asteroidSpeedMult * (asteroid.velocityX + (Math.random() - 0.5)),
+              asteroidSpeedMult * (asteroid.velocityY + (Math.random() - 0.5))));
           
         } else if(size == 'small') {
 
+          score += 100;
+          
           explosions.push(
             new Explosion(
               asteroid.positionX,
               asteroid.positionY,
               0, 0));
+
+          if(Math.random() > 0.9) {
+            powerups.push(
+              new StreamPowerUp(
+                asteroid.positionX,
+                asteroid.positionY,
+                asteroid.velocityX + (Math.random() - 0.5) ,
+                asteroid.velocityY + (Math.random() - 0.5) ));
+          }
+          if(Math.random() > 0.9) {
+            powerups.push(
+              new BigBulletPowerUp(
+                asteroid.positionX,
+                asteroid.positionY,
+                asteroid.velocityX + (Math.random() - 0.5) ,
+                asteroid.velocityY + (Math.random() - 0.5) ));
+          }
         }
       } 
     });
-    
-    if(player.playing && !player.isDead() && greinerHormann.intersection(asteroid.getAbsoluteCoordinates(), player.getAbsoluteCoordinates()) !== null) {      
+
+    if(player.playing && !player.isDead() && greinerHormann.intersection(asteroid.getAbsoluteCoordinates(), player.getAbsoluteCoordinates()) !== null) {
+      lives--;
+      if(lives < 0) {
+        round = 0;
+        lastScore = score;
+        initializeRound();
+      }
+      
       player.die();
       explosions.push(
         new Explosion(
@@ -537,9 +662,18 @@ function frame() {
           player.velocityY));
     }
   });
+
+  powerups.forEach((powerup, pidx) => { 
+    if(player.playing && !player.isDead() && greinerHormann.intersection(powerup.getAbsoluteCoordinates(), player.getAbsoluteCoordinates()) !== null) {      
+      player.addPowerUp(powerup.getPowerUpCode());
+      delete powerups[pidx];
+    }
+  });
+  
   bullets = bullets.filter(bullet => bullet !== undefined && bullet.shouldContinue());
   asteroids = asteroids.filter(asteroid => asteroid !== undefined);
   explosions = explosions.filter(explosion => explosion.shouldContinue());
+  powerups = powerups.filter(powerup => powerup !== undefined);
 
   if(asteroids.length == 0) {
     round++;
@@ -558,40 +692,48 @@ function frame() {
   ctx.save();
   
   if(round == 0) {
-    ctx.fillText("             !! ASTER-ROID ATTAK !!", 240, 100);
+    ctx.fillText("            !! ASTER-ROID ATTAK !!", 240, 100);
 
-    ctx.fillText("Left / Right Arrow  .  .  .  Steer Ship", 240, 160);
+    ctx.fillText("Left / Right Arrow  .  .  .  Steer Ship", 240, 140);
+    ctx.fillText("          Up Arrow  .  .  .  Thrust", 240, 160);
     ctx.fillText("             Space  .  .  .  Fire", 240, 180);
     ctx.fillText("             Enter  .  .  .  Start", 240, 200);
+
+    if(lastScore > 0) {
+      ctx.fillText(`            Last Score: ${lastScore}`, 280, 300);
+    }
+    
   } else {
-    ctx.fillText(`Lives:∞  Round: ${round}`, 800, 20);
+    ctx.fillText(`Score: ${score}`, 10, 20);
+    ctx.fillText(`Lives: ${lives}  Round: ${round}`, 780, 20);
   }
   
   if(player.playing && !player.isDead()) { 
     player.draw(ctx, upPressed);
   }
 
-  // draw respawn box for debug
-  if(player.isDead()) {
+  // // draw respawn box for debug
+  // if(player.isDead()) {
 
-    ctx.beginPath()
-    spawnGraceBox.forEach((coord, idx) => {
-      if(ctx == null) {
-        return;
-      }
-      if(idx == 0) {
-        ctx.moveTo(coord[0], coord[1]);
-      } else {
-        ctx.lineTo(coord[0], coord[1]);
-      }      
-    });
-    ctx.closePath();
-    ctx.stroke();
-  }
+  //   ctx.beginPath()
+  //   spawnGraceBox.forEach((coord, idx) => {
+  //     if(ctx == null) {
+  //       return;
+  //     }
+  //     if(idx == 0) {
+  //       ctx.moveTo(coord[0], coord[1]);
+  //     } else {
+  //       ctx.lineTo(coord[0], coord[1]);
+  //     }      
+  //   });
+  //   ctx.closePath();
+  //   ctx.stroke();
+  // }
   
   for(let bullet of bullets) bullet.draw(ctx);
   for(let asteroid of asteroids) asteroid.draw(ctx);
   for(let explosion of explosions) explosion.draw(ctx);
+  for(let powerup of powerups) powerup.draw(ctx);
   
   window.requestAnimationFrame(frame); 
 }
