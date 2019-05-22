@@ -646,12 +646,6 @@ function frame() {
     });
 
     if(player.playing && !player.isDead() && greinerHormann.intersection(asteroid.getAbsoluteCoordinates(), player.getAbsoluteCoordinates()) !== null) {
-      lives--;
-      if(lives < 0) {
-        round = 0;
-        lastScore = score;
-        initializeRound();
-      }
       
       player.die();
       explosions.push(
@@ -661,6 +655,14 @@ function frame() {
           player.velocityX,
           player.velocityY));
     }
+
+    lives--;
+    if(lives < 0) {
+      round = 0;
+      lastScore = score;
+      initializeRound();
+    }
+    
   });
 
   powerups.forEach((powerup, pidx) => { 
