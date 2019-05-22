@@ -5,6 +5,7 @@
 // hyperspace
 // random asteroid shapes
 // ctrl = shoot?
+// prevent autorepeat on hold down space somehow
 
 declare var greinerHormann: any;
 
@@ -665,8 +666,9 @@ function frame() {
       lives--;
       if(lives < 0) {
         player.playing = false;
-        round = 0;
         lastScore = score;
+        round = 0;
+        score = 0;
         initializeRound();
       }
       
