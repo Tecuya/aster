@@ -415,54 +415,76 @@ class Bullet extends Collideable {
             [-1 * useBs / 2, -1 * useBs / 2]]
   }
 }
+class ExtraLifePowerUp extends PowerUp {
+    getPowerUpCode(): string {
+        return 'L';
+    }
 
+    applyEffect(player: Player): void {
+        player.addLife();
+    }
+}
 class Player extends Collideable {
+    private powerUps: string[] = [];
+    public playing: boolean = false;
+    private deathFrame: number = -1;
+    public lives: number = 0; // Add lives property to the Player class
 
-  private powerUps: string[] = [];
-  public playing: boolean = false;
-  private deathFrame: number = -1;
+    constructor(
+        public positionX:number,
+        public positionY:number,
+        public velocityX:number,
+        public velocityY:number,
+        public currentRotation:number) {
 
-  constructor(
-    public positionX:number,
-    public positionY:number,
-    public velocityX:number,
-    public velocityY:number,
-    public currentRotation:number) {
+        super(positionX, positionY, velocityX, velocityY);
+        this.lives = 3; // Initialize lives with a default value
+    }
 
-    super(positionX, positionY, velocityX, velocityY);
-  }
+    addPowerUp(powerUpCode: string): void {
+        this.powerUps.push(powerUpCode);
+    }
 
-  addPowerUp(powerUpCode: string): void {
-    this.powerUps.push(powerUpCode);
-  }
+    hasPowerUp(powerUpCode: string): boolean {
+        return this.powerUps.indexOf(powerUpCode) > -1;
+    }
 
-  hasPowerUp(powerUpCode: string): boolean {
-    return this.powerUps.indexOf(powerUpCode) > -1;
-  }
+    clearPowerUps(): void {
+        this.powerUps = [];
+    }
 
-  clearPowerUps(): void {
-    this.powerUps = [];
-  }
+    getRelativeCoordinates(): number[][] {
+        return [[0, -10],
+                [-10, 10],
+                [0, 7],
+                [10, 10],
+                [0, -10]];
+    }
 
-  getRelativeCoordinates(): number[][] {
-    return [[0, -10],
-            [-10, 10],
-            [0, 7],
-            [10, 10],
-            [0, -10]];
-  }
+    updatePosition(): void {
+        super.updatePosition();
+        this.wrapPosition();
+    }
 
-  updatePosition(): void {
-    super.updatePosition();
-    this.wrapPosition();
-  }
+    addLife(): void {
+        this.lives += 1; // Update the method to use the class property
+    }
 
-  isDead(): boolean {
-    return this.deathFrame != -1;
-  }
+    die(): void {
+        this.deathFrame = 0;
+    }
 
-  die(): void {
-    this.deathFrame = 0;
+    preRound(): void {
+        this.deathFrame = deathFrameCount;
+    }
+
+    isClearToSpawn(): boolean {
+        // Existing code...
+    }
+
+    // Rest of the Player class...
+}
+    }
   }
 
   preRound(): void {
@@ -663,8 +685,8 @@ function frame() {
           player.velocityX,
           player.velocityY));
 
-      lives--;
-      if(lives < 0) {
+        player.lives--;
+      if(player.lives < 0) {
         player.playing = false;
         lastScore = score;
         round = 0;
