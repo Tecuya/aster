@@ -56,14 +56,14 @@ function init() {
 
   canvas.width = 1024;
   canvas.height = 576;
-  
+
   document.addEventListener("keydown", keyDownHandler, false);
   document.addEventListener("keyup", keyUpHandler, false);
 
   player = new Player(canvas.width / 2, canvas.height / 2, 0, 0, 0);
 
   initializeRound();
-  
+
   frame();
 }
 
@@ -78,9 +78,9 @@ function initializeRound(): void {
         Math.random() * canvas.width,
         Math.random() * canvas.height,
         (Math.random() - 0.5) * 2,
-        (Math.random() - 0.5) * 2));   
+        (Math.random() - 0.5) * 2));
   }
-  
+
   if(round > 0) {
     player.preRound();
 
@@ -88,7 +88,7 @@ function initializeRound(): void {
 
     player.clearPowerUps();
     player.setDefaultPosition();
-    
+
   }
 
   if(round == 1) {
@@ -107,7 +107,7 @@ function keyDownHandler(e:KeyboardEvent) {
     upPressed = true;
   } else if(e.key == " ") {
     spacePressed = true;
-    if(!player.isDead()) { 
+    if(!player.isDead()) {
       bullets.push(
         new Bullet(
           player.positionX,
@@ -135,9 +135,9 @@ function keyUpHandler(e:KeyboardEvent) {
 }
 
 class Entity {
-  
+
   protected distanceTraveled: number;
-  
+
   constructor(
     public positionX:number,
     public positionY:number,
@@ -153,13 +153,13 @@ class Entity {
     this.distanceTraveled += Math.sqrt(this.velocityX ** 2 + this.velocityY ** 2);
   }
 
-  wrapPosition(): void { 
+  wrapPosition(): void {
     if(this.positionX > canvas.width) {
       this.positionX = 0;
     } else if(this.positionX < 0) {
       this.positionX = canvas.width;
     }
-    
+
     if(this.positionY > canvas.height) {
       this.positionY = 0;
     } else if(this.positionY < 0) {
@@ -173,7 +173,7 @@ class Entity {
         ctx.moveTo(coord[0], coord[1]);
       } else {
         ctx.lineTo(coord[0], coord[1]);
-      }      
+      }
     });
   }
 }
@@ -181,10 +181,10 @@ class Entity {
 
 abstract class Collideable extends Entity {
   getAbsoluteCoordinates(): number[][] {
-    
+
     var absoluteCoords: number[][];
     absoluteCoords = [];
-    
+
     for(let coord of this.getRelativeCoordinates()) {
       absoluteCoords.push(
         [this.positionX + coord[0],
@@ -194,7 +194,7 @@ abstract class Collideable extends Entity {
     return absoluteCoords;
   }
 
-  abstract getRelativeCoordinates(): number[][];  
+  abstract getRelativeCoordinates(): number[][];
 }
 
 
@@ -209,15 +209,15 @@ abstract class Asteroid extends Collideable {
     ctx.save();
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 2;
-    
+
     ctx.beginPath();
     ctx.translate(this.positionX, this.positionY);
 
     this.drawRelativeCoordinates(this.getRelativeCoordinates(), ctx);
-    
+
     ctx.closePath();
     ctx.stroke();
-    
+
     ctx.restore();
   }
 
@@ -238,10 +238,10 @@ class AsteroidLarge extends Asteroid {
       [-48, 72],
 
       [0, 80]
-      
-    ];    
+
+    ];
   }
-  
+
   getSize(): string {
     return 'large';
   }
@@ -259,11 +259,11 @@ class AsteroidMedium extends Asteroid {
       [-26, -8],
       [-38, 13],
       [-24, 36],
-      
+
       [0, 34]
-    ];    
+    ];
   }
-  
+
   getSize(): string {
     return 'medium';
   }
@@ -281,15 +281,15 @@ class AsteroidSmall extends Asteroid {
       [-8, -9],
       [-12, 7],
       [-12, 15],
-      
+
       [0, 20]
-    ];    
+    ];
   }
 
   getSize(): string {
     return 'small';
   }
-  
+
 }
 
 
@@ -303,7 +303,7 @@ class Explosion extends Entity {
     ctx.lineWidth = 2;
 
     ctx.translate(this.positionX, this.positionY);
-    
+
     let xrads = Math.PI*2 / explosionRays;
 
     for(var i=0; i<explosionRays; i++) {
@@ -317,14 +317,14 @@ class Explosion extends Entity {
       ctx.closePath();
       ctx.stroke();
     }
-    
+
     this.frameNumber++;
     ctx.restore();
   }
 
   shouldContinue(): boolean {
     return this.frameNumber < 60;
-  }  
+  }
 }
 
 
@@ -341,16 +341,16 @@ abstract class PowerUp extends Collideable {
     ctx.fillStyle = 'green';
     ctx.lineWidth = 2;
 
-    ctx.translate(this.positionX, this.positionY);    
+    ctx.translate(this.positionX, this.positionY);
     ctx.beginPath();
 
     this.drawRelativeCoordinates(this.getRelativeCoordinates(), ctx);
 
     ctx.fillText(this.getPowerUpCode(), -6, 6);
-    
+
     ctx.closePath();
     ctx.stroke();
-    
+
     ctx.restore();
   }
 
@@ -362,7 +362,7 @@ abstract class PowerUp extends Collideable {
       [-13, 0],
       [0, -13]];
   }
-  
+
   abstract getPowerUpCode(): string;
 }
 
@@ -385,20 +385,20 @@ class Bullet extends Collideable {
     super.updatePosition();
     this.wrapPosition();
   }
-  
+
   draw(ctx:CanvasRenderingContext2D): void {
     ctx.save();
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 2;
 
-    ctx.translate(this.positionX, this.positionY);    
+    ctx.translate(this.positionX, this.positionY);
     ctx.beginPath();
 
     this.drawRelativeCoordinates(this.getRelativeCoordinates(), ctx);
-    
+
     ctx.closePath();
     ctx.stroke();
-    
+
     ctx.restore();
   }
 
@@ -413,7 +413,7 @@ class Bullet extends Collideable {
             [useBs / 2,      useBs / 2],
             [-1 * useBs / 2, useBs / 2],
             [-1 * useBs / 2, -1 * useBs / 2]]
-  }  
+  }
 }
 
 class Player extends Collideable {
@@ -421,7 +421,7 @@ class Player extends Collideable {
   private powerUps: string[] = [];
   public playing: boolean = false;
   private deathFrame: number = -1;
-  
+
   constructor(
     public positionX:number,
     public positionY:number,
@@ -429,7 +429,7 @@ class Player extends Collideable {
     public velocityY:number,
     public currentRotation:number) {
 
-    super(positionX, positionY, velocityX, velocityY);    
+    super(positionX, positionY, velocityX, velocityY);
   }
 
   addPowerUp(powerUpCode: string): void {
@@ -443,7 +443,7 @@ class Player extends Collideable {
   clearPowerUps(): void {
     this.powerUps = [];
   }
-  
+
   getRelativeCoordinates(): number[][] {
     return [[0, -10],
             [-10, 10],
@@ -451,16 +451,16 @@ class Player extends Collideable {
             [10, 10],
             [0, -10]];
   }
-  
+
   updatePosition(): void {
     super.updatePosition();
     this.wrapPosition();
-  }    
+  }
 
   isDead(): boolean {
     return this.deathFrame != -1;
   }
-  
+
   die(): void {
     this.deathFrame = 0;
   }
@@ -468,30 +468,30 @@ class Player extends Collideable {
   preRound(): void {
     this.deathFrame = deathFrameCount;
   }
-  
+
   isClearToSpawn(): boolean {
 
     if(this.deathFrame < deathFrameCount) {
       this.deathFrame++;
       return false;
     }
-    
+
     let clearToSpawn = true;
 
     asteroids.forEach((asteroid, aidx) => {
-      if(greinerHormann.intersection(asteroid.getAbsoluteCoordinates(), spawnGraceBox) !== null) { 
+      if(greinerHormann.intersection(asteroid.getAbsoluteCoordinates(), spawnGraceBox) !== null) {
         clearToSpawn = false;
       }
     });
 
-    return clearToSpawn;  
+    return clearToSpawn;
   }
-  
+
   tryToSpawn(): void {
-    if(this.isClearToSpawn()) { 
+    if(this.isClearToSpawn()) {
       this.deathFrame = -1;
       this.setDefaultPosition();
-    } 
+    }
   }
 
   setDefaultPosition(): void {
@@ -500,20 +500,20 @@ class Player extends Collideable {
     this.velocityX = 0;
     this.velocityY = 0;
   }
-  
+
   draw(ctx:CanvasRenderingContext2D, thrust:boolean): void {
 
     if(this.isDead()) {
       return;
     }
-    
+
     ctx.save();
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 3;
 
     ctx.translate(this.positionX, this.positionY);
     ctx.rotate(this.currentRotation);
-    
+
     ctx.beginPath();
 
     this.drawRelativeCoordinates(this.getRelativeCoordinates(), ctx);
@@ -527,7 +527,7 @@ class Player extends Collideable {
          [-4, 14]],
       ctx);
     }
-    
+
     ctx.closePath();
     ctx.stroke();
 
@@ -554,17 +554,17 @@ function frame() {
   if(ctx == null) {
     return;
   }
-  
+
   if(player.playing) {
-    if(player.isDead()) {      
-      player.tryToSpawn();        
-    } else { 
+    if(player.isDead()) {
+      player.tryToSpawn();
+    } else {
       player.handleKeys(leftPressed, rightPressed, upPressed);
       player.updatePosition();
     }
   }
 
-  if(!player.isDead() && player.hasPowerUp('S') && spacePressed) { 
+  if(!player.isDead() && player.hasPowerUp('S') && spacePressed) {
     bullets.push(
       new Bullet(
         player.positionX,
@@ -572,18 +572,18 @@ function frame() {
         player.velocityX + (Math.sin(player.currentRotation) * 10),
         player.velocityY + (-1 * Math.cos(player.currentRotation) * 10)));
   }
-  
+
   for(let bullet of bullets) bullet.updatePosition();
   for(let asteroid of asteroids) asteroid.updatePosition();
   for(let powerup of powerups) powerup.updatePosition();
 
   let asteroidSpeedMult = roundSpeeds[round];
-  
+
   // collisions
   asteroids.forEach((asteroid, aidx) => {
     bullets.forEach((bullet, bidx) => {
-      
-      if(greinerHormann.intersection(asteroid.getAbsoluteCoordinates(), bullet.getAbsoluteCoordinates()) !== null) { 
+
+      if(greinerHormann.intersection(asteroid.getAbsoluteCoordinates(), bullet.getAbsoluteCoordinates()) !== null) {
 
         delete bullets[bidx];
         delete asteroids[aidx];
@@ -592,7 +592,7 @@ function frame() {
         if(size == 'large') {
 
           score += 20;
-          
+
           asteroids.push(
             new AsteroidMedium(
               asteroid.positionX,
@@ -605,11 +605,11 @@ function frame() {
               asteroid.positionY,
               asteroidSpeedMult * (asteroid.velocityX + (Math.random() - 0.5)),
               asteroidSpeedMult * (asteroid.velocityY + (Math.random() - 0.5))));
-          
+
         } else if(size == 'medium') {
 
           score += 50;
-          
+
           asteroids.push(
             new AsteroidSmall(
               asteroid.positionX,
@@ -622,11 +622,11 @@ function frame() {
               asteroid.positionY,
               asteroidSpeedMult * (asteroid.velocityX + (Math.random() - 0.5)),
               asteroidSpeedMult * (asteroid.velocityY + (Math.random() - 0.5))));
-          
+
         } else if(size == 'small') {
 
           score += 100;
-          
+
           explosions.push(
             new Explosion(
               asteroid.positionX,
@@ -650,11 +650,11 @@ function frame() {
                 asteroid.velocityY + (Math.random() - 0.5) ));
           }
         }
-      } 
+      }
     });
 
     if(player.playing && !player.isDead() && greinerHormann.intersection(asteroid.getAbsoluteCoordinates(), player.getAbsoluteCoordinates()) !== null) {
-      
+
       player.die();
       explosions.push(
         new Explosion(
@@ -671,18 +671,18 @@ function frame() {
         score = 0;
         initializeRound();
       }
-      
+
     }
-    
+
   });
 
-  powerups.forEach((powerup, pidx) => { 
-    if(player.playing && !player.isDead() && greinerHormann.intersection(powerup.getAbsoluteCoordinates(), player.getAbsoluteCoordinates()) !== null) {      
+  powerups.forEach((powerup, pidx) => {
+    if(player.playing && !player.isDead() && greinerHormann.intersection(powerup.getAbsoluteCoordinates(), player.getAbsoluteCoordinates()) !== null) {
       player.addPowerUp(powerup.getPowerUpCode());
       delete powerups[pidx];
     }
   });
-  
+
   bullets = bullets.filter(bullet => bullet !== undefined && bullet.shouldContinue());
   asteroids = asteroids.filter(asteroid => asteroid !== undefined);
   explosions = explosions.filter(explosion => explosion.shouldContinue());
@@ -692,18 +692,18 @@ function frame() {
     round++;
     initializeRound();
   }
-  
+
   // draw
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  ctx.fillStyle = 'black';  
+
+  ctx.fillStyle = 'black';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
+
   ctx.font = "20px Courier";
   ctx.fillStyle = "white";
   ctx.strokeStyle = "white";
   ctx.save();
-  
+
   if(round == 0) {
     ctx.fillText("            !! ASTER-ROID ATTAK !!", 240, 100);
 
@@ -715,13 +715,13 @@ function frame() {
     if(lastScore > 0) {
       ctx.fillText(`            Last Score: ${lastScore}`, 280, 300);
     }
-    
+
   } else {
     ctx.fillText(`Score: ${score}`, 10, 20);
     ctx.fillText(`Lives: ${lives}  Round: ${round}`, 780, 20);
   }
-  
-  if(player.playing && !player.isDead()) { 
+
+  if(player.playing && !player.isDead()) {
     player.draw(ctx, upPressed);
   }
 
@@ -737,16 +737,16 @@ function frame() {
   //       ctx.moveTo(coord[0], coord[1]);
   //     } else {
   //       ctx.lineTo(coord[0], coord[1]);
-  //     }      
+  //     }
   //   });
   //   ctx.closePath();
   //   ctx.stroke();
   // }
-  
+
   for(let bullet of bullets) bullet.draw(ctx);
   for(let asteroid of asteroids) asteroid.draw(ctx);
   for(let explosion of explosions) explosion.draw(ctx);
   for(let powerup of powerups) powerup.draw(ctx);
-  
-  window.requestAnimationFrame(frame); 
+
+  window.requestAnimationFrame(frame);
 }
